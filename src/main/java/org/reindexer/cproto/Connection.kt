@@ -77,18 +77,19 @@ class Connection {
                 din.readFully(header)
 
                 val ser = ByteArraySerializer.getSerializer(header)
-                val magic = ser.uInt32
-                val version = ser.uInt16
+                val magic = ser.getUInt32()
+                val version = ser.getUInt16()
                 /**/
-                ser.uInt16
-                val size = ser.uInt32.toInt()
-                val rseq = ser.uInt32
+                ser.getUInt16()
+                val size = ser.getUInt32().toInt()
+                val rseq = ser.getUInt32()
                 if (magic != cprotoMagic.toUInt()) {
                     throw InvalidProtocolException(String.format("Invalid cproto magic '%08X'", magic))
                 }
 
                 if (version < cprotoVersion) {
-                    throw InvalidProtocolException(String.format("Unsupported cproto version '%04X'. " + "This client expects reindexer server v1.9.8+", version))
+                    throw InvalidProtocolException(String.format("Unsupported cproto version '%04X'. " +
+                            "This client expects reindexer server v1.9.8+", version))
                 }
 
                 val answer = ByteArray(size)

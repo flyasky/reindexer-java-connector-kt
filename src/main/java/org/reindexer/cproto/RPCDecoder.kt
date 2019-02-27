@@ -33,24 +33,24 @@ class RPCDecoder(private val ser: Serializer) {
     }
 
     private fun intfArg(): Any {
-        val type = ser.varUInt.toInt()
+        val type = ser.getVarUInt().toInt()
         when (type) {
-            Consts.ValueInt -> return Integer.valueOf(ser.varInt.toInt())
-            Consts.ValueBool -> return java.lang.Boolean.valueOf(ser.varInt != 0L)
-            Consts.ValueString -> return ser.vString
-            Consts.ValueInt64 -> return ser.varInt
-            Consts.ValueDouble -> return ser.double
+            Consts.ValueInt -> return Integer.valueOf(ser.getVarInt().toInt())
+            Consts.ValueBool -> return java.lang.Boolean.valueOf(ser.getVarInt() != 0L)
+            Consts.ValueString -> return ser.getVString()
+            Consts.ValueInt64 -> return ser.getVarInt()
+            Consts.ValueDouble -> return ser.getDouble()
             else -> throw InvalidProtocolException(String.format("cproto: Unexpected arg type %d", type))
         }
     }
 
     private fun argsCount(): Int {
-        return ser.varUInt.toInt()
+        return ser.getVarUInt().toInt()
     }
 
     private fun errCode(): NewError? {
-        val code = ser.varUInt.toInt()
-        val message = ser.vString
+        val code = ser.getVarUInt().toInt()
+        val message = ser.getVString()
         return if (code != 0) {
             object : NewError {
                 override val code: Int

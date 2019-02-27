@@ -4,19 +4,19 @@ import java.nio.ByteBuffer
 
 interface Serializer {
 
-    val uInt16: Int
+    fun getUInt16(): Int
 
-    val uInt32: UInt
+    fun getUInt32(): UInt
 
-    val varUInt: Long
+    fun getVarUInt(): Long
 
-    val varInt: Long
+    fun getVarInt(): Long
 
-    val vString: String
+    fun getVString(): String
 
-    val vBytes: String
+    fun getVBytes(): String
 
-    val double: Double
+    fun getDouble(): Double
 
     fun bytes(): ByteArray
 

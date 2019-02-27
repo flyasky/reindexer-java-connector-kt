@@ -7,63 +7,94 @@ import java.util.Arrays
 
 class ByteArraySerializer : Serializer {
 
-    internal var buf = ByteArray(0)
-    internal var pos: Int = 0
+    private var buf = ByteArray(0)
+    private var pos: Int = 0
 
+    private constructor()
+
+    private constructor(buf: ByteArray) {
+        this.buf = Arrays.copyOf(buf, buf.size)
+    }
+
+    override fun bytes(): ByteArray {
+        return buf
+    }
     /**
      * Читает без знака 2 байта (int16).
      *
      * В Java для беззнаковых надо использовать более широкий тип.
      */
-    override val uInt16: Int
-        get() = readIntBits(2).toInt()
+    override fun getUInt16(): Int {
+        return readIntBits(2).toInt()
+    }
+
+    override fun getUInt32(): UInt {
+        return readIntBits(4).toUInt()
+    }
+
+    override fun getVarUInt(): Long {
+        var x: Long = 0
+        var s = 0
+        var c = 0
+
+        for (i in pos until buf.size) {
+            c++
+            // FIXME
+            val b = (buf[i].toInt() and 0xFF).toLong()
+            if (s >= 63) {
+                if (s == 63 && b > 1 || s > 63)
+                    throw NumberFormatException("Overflow: value is larger than 64 bits")
+            }
+            if (b and 0x80 == 0L) {
+                pos = pos + c
+                return x or (b shl s)
+            }
+            x = x or (b and 0x7F shl s)
+            s += 7
+        }
+        throw IllegalArgumentException("Input buffer too small")
+    }
 
     /**
-     * Читает без знака 4 байта (int32).
-     *
-     * В Java для беззнаковых нужно использовать более широкий тип.
+     * https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java
      */
-    override val uInt32: UInt
-        get() = readIntBits(4).toUInt()
+    override fun getVarInt(): Long {
+        // This undoes the trick in writeSignedVarLong()
+        // This extra step lets us deal with the largest signed values by treating
+        // negative results from read unsigned methods as like unsigned values
+        // Must re-flip the top bit if the original read value had it set.
+        val raw = getVarUInt()
+        val temp = raw shl 63 shr 63 xor raw shr 1
+        return temp xor (raw and (1L shl 63))
+    }
 
-    override
-            /**
-             * https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java
-             */// This undoes the trick in writeSignedVarLong()
-    // This extra step lets us deal with the largest signed values by treating
-    // negative results from read unsigned methods as like unsigned values
-    // Must re-flip the top bit if the original read value had it set.
-    val varInt: Long
-        get() {
-            val raw = varUInt
-            val temp = raw shl 63 shr 63 xor raw shr 1
-            return temp xor (raw and (1L shl 63))
+    override fun getVString(): String {
+        val l = getVarUInt().toInt()
+        if (pos + l > buf.size) {
+            throw RuntimeException(String.format("Internal error: serializer need %d bytes, but only %d available",
+                    l, buf.size - pos))
         }
+        val v = String(Arrays.copyOfRange(buf, pos, pos + l), StandardCharsets.UTF_8)
+        pos += l
+        return v
 
-    override val varUInt: Long
-        get() {
-            var x: Long = 0
-            var s = 0
-            var c = 0
+    }
 
-            for (i in pos until buf.size) {
-                c++
-                // FIXME
-                val b = (buf[i].toInt() and 0xFF).toLong()
-                if (s >= 63) {
-                    if (s == 63 && b > 1 || s > 63)
-                        throw NumberFormatException("Overflow: value is larger than 64 bits")
-                }
-                if (b and 0x80 == 0L) {
-                    pos = pos + c
-                    return x or (b shl s)
-                }
-                x = x or (b and 0x7F shl s)
-                s += 7
-            }
-            throw IllegalArgumentException("Input buffer too small")
+    // FIXME bytes?? encoding??
+    override fun getVBytes(): String {
+        val l = getUInt32().toInt()
+        if (pos + l > buf.size) {
+            throw RuntimeException(String.format("Internal error: serializer need %d bytes, but only %d available",
+                    l, buf.size - pos))
         }
+        val v = String(Arrays.copyOfRange(buf, pos, pos + l), StandardCharsets.UTF_8)
+        pos += l
+        return v
+    }
 
+    override fun getDouble(): Double {
+        TODO("not implemented")
+    }
 
     /*    @Override
     // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java
@@ -84,43 +115,6 @@ class ByteArraySerializer : Serializer {
     }*/
 
 
-    override val vString: String
-        get() {
-            val l = varUInt.toInt()
-            if (pos + l > buf.size) {
-                throw RuntimeException(String.format("Internal error: serializer need %d bytes, but only %d available",
-                        l, buf.size - pos))
-            }
-            val v = String(Arrays.copyOfRange(buf, pos, pos + l), StandardCharsets.UTF_8)
-            pos += l
-            return v
-        }
-
-    override// FIXME bytes?? encoding??
-    val vBytes: String
-        get() {
-            val l = uInt32.toInt()
-            if (pos + l > buf.size) {
-                throw RuntimeException(String.format("Internal error: serializer need %d bytes, but only %d available",
-                        l, buf.size - pos))
-            }
-            val v = String(Arrays.copyOfRange(buf, pos, pos + l), StandardCharsets.UTF_8)
-            pos += l
-            return v
-        }
-
-    override val double: Double
-        get() = TODO("not implemented")
-
-    private constructor() {}
-
-    private constructor(buf: ByteArray) {
-        this.buf = Arrays.copyOf(buf, buf.size)
-    }
-
-    override fun bytes(): ByteArray {
-        return buf
-    }
 
     override fun readIntBits(sz: Int): Long {
         if (pos + sz > buf.size) {
