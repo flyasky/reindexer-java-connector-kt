@@ -19,6 +19,7 @@ class ByteArraySerializer : Serializer {
     override fun bytes(): ByteArray {
         return buf
     }
+
     /**
      * Читает без знака 2 байта (int16).
      *
@@ -95,26 +96,6 @@ class ByteArraySerializer : Serializer {
     override fun getDouble(): Double {
         TODO("not implemented")
     }
-
-    /*    @Override
-    // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java
-    public long getVarUInt() {
-        long value = 0L;
-        int i = 0;
-        int p = pos;
-        long b;
-        while (((b = buf[p]) & 0x80L) != 0) {
-            value |= (b & 0x7F) << i;
-            i += 7;
-            if (i > 63) {
-                throw new NumberFormatException("Variable length quantity is too long");
-            }
-        }
-        pos += p;
-        return value | (b << i);
-    }*/
-
-
 
     override fun readIntBits(sz: Int): Long {
         if (pos + sz > buf.size) {
