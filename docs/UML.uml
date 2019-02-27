@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>JAVA</ID>
+  <OriginalElement>myapp.Example</OriginalElement>
+  <nodes>
+    <node x="0.0" y="448.0">org.reindexer.connector.Reindexer</node>
+    <node x="0.0" y="78.0">org.reindexer.DefaultNamespaceOptions</node>
+    <node x="0.0" y="302.0">org.reindexer.cproto.RPCDecoder</node>
+    <node x="170.0" y="375.0">org.reindexer.cproto.NetBuffer</node>
+    <node x="310.0" y="448.0">org.reindexer.connector.Binding</node>
+    <node x="0.0" y="375.0">org.reindexer.cproto.Connection</node>
+    <node x="26.0" y="0.0">org.reindexer.NamespaceOptions</node>
+    <node x="176.0" y="302.0">org.reindexer.cproto.RPCEncoder</node>
+    <node x="0.0" y="229.0">org.reindexer.connector.ReindexerFactoryImpl</node>
+    <node x="241.0" y="229.0">org.reindexer.cjson.ByteArraySerializer</node>
+    <node x="15.0" y="151.0">org.reindexer.connector.ReindexerFactory</node>
+    <node x="275.0" y="151.0">org.reindexer.cjson.Serializer</node>
+    <node x="160.0" y="448.0">myapp.Example</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="org.reindexer.cjson.ByteArraySerializer" target="org.reindexer.cjson.Serializer">
+      <point x="0.0" y="-14.0" />
+      <point x="0.0" y="14.0" />
+    </edge>
+    <edge source="org.reindexer.DefaultNamespaceOptions" target="org.reindexer.NamespaceOptions">
+      <point x="0.0" y="-14.0" />
+      <point x="0.0" y="14.0" />
+    </edge>
+    <edge source="org.reindexer.connector.ReindexerFactoryImpl" target="org.reindexer.connector.ReindexerFactory">
+      <point x="0.0" y="-14.0" />
+      <point x="0.0" y="14.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Group" zoom="1.0" x="233.0" y="363.0" />
+  <SelectedNodes />
+  <Categories />
+  <SCOPE>All</SCOPE>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+
