@@ -1,16 +1,15 @@
 package org.reindexer.connector
 
 import com.google.gson.GsonBuilder
-import org.reindexer.Consts
-import org.reindexer.IndexDef
-import org.reindexer.Namespace
-import org.reindexer.NamespaceOptions
-import org.reindexer.cjson.ByteArraySerializer
-import org.reindexer.cjson.Serializer
-import org.reindexer.exceptions.NsExistsException
-import org.reindexer.exceptions.NsNotFoundException
-import org.reindexer.exceptions.ReindexerException
-import org.reindexer.exceptions.UnimplementedException
+import org.reindexer.connector.cjson.ByteArraySerializer
+import org.reindexer.connector.cjson.Serializer
+import org.reindexer.connector.def.IndexDef
+import org.reindexer.connector.bindings.cproto.Cproto
+import org.reindexer.connector.exceptions.NsExistsException
+import org.reindexer.connector.exceptions.NsNotFoundException
+import org.reindexer.connector.exceptions.ReindexerException
+import org.reindexer.connector.exceptions.UnimplementedException
+import org.reindexer.connector.options.NamespaceOptions
 
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
@@ -18,12 +17,19 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Reindexer API
  */
-class Reindexer(url: String, private val binding: Binding) {
+class Reindexer {
 
+    private var url: String
+    private var binding: Binding
     private val namespaceMap: MutableMap<String, Namespace> = ConcurrentHashMap()
 
-    init {
-        // TODO lazy login
+    private constructor(url: String, binding: Binding) {
+        this.url = url
+        this.binding = binding
+        init()
+    }
+
+    private fun init() {
         val err = binding.init(url)
         if (err.code != 0) {
             throw ReindexerException(err.message)
@@ -236,6 +242,25 @@ class Reindexer(url: String, private val binding: Binding) {
         }
 
          */
+    }
+
+    companion object {
+        @JvmStatic
+        fun newReindexer(url: String): Reindexer {
+            val protocol = url.substring(0, url.indexOf(":"))
+            when (protocol) {
+                "cproto" -> return Reindexer(url, Cproto())
+                "http" ->
+                    //return new Reindexer(url, new RestApiBinding());
+                    throw UnimplementedException()
+                "builtin" ->
+                    //return new Reindexer(url, new BuiltinBinding());
+                    throw UnimplementedException()
+                "builtinserver" -> throw UnimplementedException()
+                else -> throw IllegalArgumentException()
+            }
+        }
+
     }
 }
 

@@ -1,0 +1,51 @@
+@startuml
+
+class RuntimeException
+
+package org.reindexer {
+
+    package org.reindexer.connector {
+        class Reindexer
+        interface Binding
+        interface RawBuffer
+
+        Reindexer -up-> Binding
+        RawBuffer <-- Binding
+    }
+
+    package org.reindexer.connector.bindings.cproto {
+
+        CprotoBinding --|> Binding
+        class Connection
+        class NetBuffer
+        class RPCEncoder
+        class RPCDecoder
+
+        Connection --> RPCEncoder
+        NetBuffer --> RPCDecoder
+
+        NetBuffer --> Connection
+        NetBuffer <-- Connection
+
+        CprotoBinding --> Connection
+
+        NetBuffer --|> RawBuffer
+    }
+
+    package org.reindexer.connector.exceptions {
+        RuntimeException <|-- ReindexerException
+        ReindexerException <|-- NetworkException
+        ReindexerException <|-- UnimplementedException
+        NetworkException <|-- InvalidProtocolException
+        ReindexerException <|-- DbException
+        DbException <|-- NsExistsException
+        DbException <|-- NsNotFoundException
+
+    }
+
+    object Consts {
+    }
+
+}
+
+@enduml

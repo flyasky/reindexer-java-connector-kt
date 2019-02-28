@@ -1,8 +1,6 @@
 package org.reindexer.connector
 
-import org.reindexer.Err
-import org.reindexer.IndexDef
-import org.reindexer.Res
+import org.reindexer.connector.def.IndexDef
 
 /**
  * Raw binding to reindexer
