@@ -6,41 +6,62 @@ package org.reindexer {
 
     package org.reindexer.connector {
         class Reindexer
-        interface Binding
-        interface RawBuffer
+        class Namespace
 
-        Reindexer -up-> Binding
-        RawBuffer <-- Binding
-    }
+        package bindings {
 
-    package org.reindexer.connector.bindings.cproto {
+            package cproto {
+                class CprotoBinding
+                class Connection
+                class NetBuffer
+                class RPCEncoder
+                class RPCDecoder
 
-        CprotoBinding --|> Binding
-        class Connection
-        class NetBuffer
-        class RPCEncoder
-        class RPCDecoder
+                CprotoBinding --|> Binding
+            }
 
-        Connection --> RPCEncoder
-        NetBuffer --> RPCDecoder
+            package def {
+                class IndexDef
+                class NamespaceDef
+                class StorageOpts
+            }
 
-        NetBuffer --> Connection
-        NetBuffer <-- Connection
+            interface Binding
+            interface RawBuffer
+            interface FetchMore
 
-        CprotoBinding --> Connection
+            class Err
+            class Res
 
-        NetBuffer --|> RawBuffer
-    }
+            Reindexer -up-> Binding
+            RawBuffer <-- Binding
 
-    package org.reindexer.connector.exceptions {
-        RuntimeException <|-- ReindexerException
-        ReindexerException <|-- NetworkException
-        ReindexerException <|-- UnimplementedException
-        NetworkException <|-- InvalidProtocolException
-        ReindexerException <|-- DbException
-        DbException <|-- NsExistsException
-        DbException <|-- NsNotFoundException
 
+            Connection --> RPCEncoder
+            NetBuffer --> RPCDecoder
+
+            NetBuffer --> Connection
+            NetBuffer <-- Connection
+
+            CprotoBinding --> Connection
+
+            NetBuffer --|> RawBuffer
+        }
+
+        package exceptions {
+            RuntimeException <|-- ReindexerException
+            ReindexerException <|-- NetworkException
+            ReindexerException <|-- UnimplementedException
+            NetworkException <|-- InvalidProtocolException
+            ReindexerException <|-- DbException
+            DbException <|-- NsExistsException
+            DbException <|-- NsNotFoundException
+
+        }
+
+        package options {
+            class NamespaceOptions
+        }
     }
 
     object Consts {
