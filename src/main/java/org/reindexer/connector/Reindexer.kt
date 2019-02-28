@@ -9,6 +9,7 @@ import org.reindexer.cjson.ByteArraySerializer
 import org.reindexer.cjson.Serializer
 import org.reindexer.exceptions.NsExistsException
 import org.reindexer.exceptions.NsNotFoundException
+import org.reindexer.exceptions.ReindexerException
 import org.reindexer.exceptions.UnimplementedException
 
 import java.nio.ByteBuffer
@@ -22,17 +23,26 @@ class Reindexer(url: String, private val binding: Binding) {
     private val namespaceMap: MutableMap<String, Namespace> = ConcurrentHashMap()
 
     init {
-        binding.init(url)
+        // TODO lazy login
+        val err = binding.init(url)
+        if (err.code != 0) {
+            throw ReindexerException(err.message)
+        }
     }
 
     fun openNamespace(namespace: String, options: NamespaceOptions, s: Class<*>) {
         registerNamespace(namespace, options, s)
         val ns = getNs(namespace)
-        binding.openNamespace(ns.name, options.enableStorage(), options.dropOnFileFormatError())
+        val res = binding.openNamespace(ns.name, options.enableStorage(), options.dropOnFileFormatError())
+        if (!res.isOk()) {
+            throw ReindexerException(res.message)
+        }
 
+/*
         for (indexDef in ns.indexes) {
             binding.addIndex(namespace, indexDef)
         }
+*/
 
         /*
         for (int retry = 0; retry < 2; retry++) {
@@ -47,7 +57,7 @@ class Reindexer(url: String, private val binding: Binding) {
             }
 
             if err != nil {
-                rerr, ok := err.(bindings.Error)
+                rerr, ok := err.(bindings.Err)
                 if ok && rerr.Code() == bindings.ErrConflict && opts.dropOnIndexesConflict {
                     db.binding.DropNamespace(namespace)
                     continue
@@ -69,12 +79,8 @@ class Reindexer(url: String, private val binding: Binding) {
      * @param item
      * @param <T>
     </T> */
-    fun <T: Any> upsert(namespace: Namespace, item: T, vararg precepts: String) {
-        modifyItem(namespace, item, null, Consts.ModeUpsert, arrayOf(*precepts))
-    }
-
     fun <T: Any> upsert(namespace: String, item: T, vararg precepts: String) {
-        val ns = getNs(namespace)
+        val ns = getNs(namespace.toLowerCase())
         modifyItem(ns, item, null, Consts.ModeUpsert, arrayOf(*precepts))
     }
 
@@ -164,20 +170,22 @@ class Reindexer(url: String, private val binding: Binding) {
         return res
     }
 
-    private fun <T : Any> modifyItem(ns: Namespace, item: T, json: ByteBuffer?, mode: Int, percepts: Array<String>): Int {
+    /**
+     * Returns number of query results rawQueryParams.count
+     */
+    private fun <T : Any> modifyItem(ns: Namespace, item: T, json: ByteBuffer?, mode: Int, percepts: Array<String>) : Int {
 
         val ser = ByteArraySerializer.newSerializer()  //cjson.NewPoolSerializer()
-        val res: PackItemResult
-        try {
-            res = packItem(ns, item, json, ser)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return 0
+        val packedItem = packItem(ns, item, json, ser)
+
+        val res = binding.modifyItem(ns.hashCode(), ns.name, packedItem.format, ser.bytes(), mode, percepts, packedItem.stateToken)
+
+        if (!res.error.isOk()) {
+            if (res.error.code == Consts.ErrStateInvalidated) {
+                //Query(ns.name).Limit(0).Exec().Close()
+            }
+            throw ReindexerException(res.error.message)
         }
-
-        val out = binding.modifyItem(ns.hashCode(), ns.name, res.format, ser.bytes(), mode, percepts, res.stateToken)
-
-        return 1
 
         /*TODO
 
@@ -195,7 +203,7 @@ class Reindexer(url: String, private val binding: Binding) {
                 out, err := db.binding.ModifyItem(ns.nsHash, ns.name, format, ser.Bytes(), mode, precepts, stateToken)
 
                 if err != nil {
-                    rerr, ok := err.(bindings.Error)
+                    rerr, ok := err.(bindings.Err)
                     if ok && rerr.Code() == bindings.ErrStateInvalidated {
                         db.Query(ns.name).Limit(0).Exec().Close()
                         err = rerr
