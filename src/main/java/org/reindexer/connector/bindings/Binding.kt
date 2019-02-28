@@ -58,10 +58,11 @@ interface Binding {
         DeleteQuery(nsHash int, rawQuery []byte) (RawBuffer, error)
         UpdateQuery(nsHash int, rawQuery []byte) (RawBuffer, error)
         Commit(namespace string) error
-        EnableLogger(logger Logger)
-        DisableLogger()
         Ping() error
         Finalize() error
         Status() Status*/
+
+    fun enableLogger(logger: Logger)
+    fun disableLogger()
 
 }

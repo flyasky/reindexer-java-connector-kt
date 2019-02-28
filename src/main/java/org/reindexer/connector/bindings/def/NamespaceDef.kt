@@ -2,7 +2,7 @@ package org.reindexer.connector.bindings.def
 
 /*
 type NamespaceDef struct {
-	Namespace   string      `json:"name"`
+	ReindexerNamespace   string      `json:"name"`
 	StorageOpts StorageOpts `json:"storage"`
 }
  */

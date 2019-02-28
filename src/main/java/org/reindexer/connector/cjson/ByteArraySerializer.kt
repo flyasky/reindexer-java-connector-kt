@@ -189,6 +189,18 @@ class ByteArraySerializer : Serializer {
         return this
     }
 
+    override fun putVBytes(a: ByteArray): Serializer {
+        val ar = a
+        val sl = ar.size
+        putVarUInt(sl.toLong())
+        val l = buf.size
+        buf = Arrays.copyOf(buf, l + sl)
+        for (i in 0 until sl) {
+            buf[l + i] = ar[i]
+        }
+        return this
+    }
+
     override fun write(a: ByteBuffer): Serializer {
         val ar = a.array()
         val sl = ar.size

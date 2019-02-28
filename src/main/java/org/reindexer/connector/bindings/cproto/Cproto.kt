@@ -4,11 +4,13 @@ import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import org.reindexer.connector.bindings.Binding
 import org.reindexer.connector.bindings.Err
+import org.reindexer.connector.bindings.Logger
 import org.reindexer.connector.bindings.Res
 import org.reindexer.connector.bindings.def.IndexDef
 import org.reindexer.connector.bindings.def.NamespaceDef
 import org.reindexer.connector.exceptions.UnimplementedException
 import org.reindexer.connector.bindings.def.StorageOpts
+import org.reindexer.connector.exceptions.Dummy
 
 import java.net.URI
 import java.net.URISyntaxException
@@ -63,13 +65,42 @@ class Cproto : Binding {
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
                 .create()
         val sNamespaceDef = gson.toJson(namespaceDef)
+
+        // Значения по умолчанию, если в reindexer_tool передать только имя:
         // {"name":"items"} -> reindexer_tool -> {"name":"items","storage":{"enabled":true},"indexes":[]}
-        //rpcCallNoResults(OperationType.WRITE, cmdOpenNamespace, sNamespaceDef); // also ok
-        return rpcCallNoResults(OperationType.WRITE, cmdOpenNamespace, ByteBuffer.wrap(sNamespaceDef.toByteArray()))
+
+        return rpcCallNoResults(OperationType.WRITE, cmdOpenNamespace, sNamespaceDef.toByteArray())
     }
 
+    override fun closeNamespace(namespace: String): Err {
+        return rpcCallNoResults(OperationType.WRITE, cmdCloseNamespace, namespace)
+    }
+
+    override fun dropNamespace(namespace: String): Err {
+        return rpcCallNoResults(OperationType.WRITE, cmdDropNamespace, namespace)
+    }
+
+
     override fun addIndex(namespace: String, indexDef: IndexDef): Err {
-        TODO("not implemented")
+        val gson = GsonBuilder()
+                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+                .create()
+        val sIndexDef = gson.toJson(indexDef)
+
+        return rpcCallNoResults(OperationType.WRITE, cmdAddIndex, namespace, sIndexDef)
+    }
+
+    override fun updateIndex(namespace: String, indexDef: IndexDef): Err {
+        val gson = GsonBuilder()
+                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+                .create()
+        val sIndexDef = gson.toJson(indexDef)
+
+        return rpcCallNoResults(OperationType.WRITE, cmdUpdateIndex, namespace, sIndexDef)
+    }
+
+    override fun dropIndex(namespace: String, index: String): Err {
+        return rpcCallNoResults(OperationType.WRITE, cmdDropIndex, namespace, index)
     }
 
     override fun modifyItem(nsHash: Int, namespace: String, format: Int,
@@ -92,24 +123,8 @@ class Cproto : Binding {
                     namespace, format, ByteBuffer.wrap(data), mode, packedPercepts, stateToken, 0)
     }
 
-    override fun closeNamespace(namespace: String): Err {
-        TODO("not implemented")
-    }
-
-    override fun dropNamespace(namespace: String): Err {
-        TODO("not implemented")
-    }
-
     override fun enableStorage(namespace: String): Err {
-        TODO("not implemented")
-    }
-
-    override fun updateIndex(namespace: String, indexDef: IndexDef): Err {
-        TODO("not implemented")
-    }
-
-    override fun dropIndex(namespace: String, index: String): Err {
-        TODO("not implemented")
+        throw Dummy("cproto binding EnableStorage method is dummy")
     }
 
     private fun rpcCallNoResults(op: OperationType, cmd: Int, vararg args: Any): Err {
@@ -139,6 +154,14 @@ class Cproto : Binding {
             }
         }
         */
+    }
+
+    override fun enableLogger(logger: Logger) {
+        throw Dummy("cproto binding EnableLogger method is dummy")
+    }
+
+    override fun disableLogger() {
+        throw Dummy("cproto binding DisableLogger method is dummy")
     }
 
     companion object {

@@ -1,6 +1,6 @@
 package org.reindexer.connector.exceptions
 
-open class ReindexerException : RuntimeException {
+open class Dummy : ReindexerException {
 
     constructor()
 

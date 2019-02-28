@@ -12,9 +12,12 @@ import org.reindexer.connector.exceptions.NsNotFoundException
 import org.reindexer.connector.exceptions.ReindexerException
 import org.reindexer.connector.exceptions.UnimplementedException
 import org.reindexer.connector.options.NamespaceOptions
+import org.reindexer.utils.Reflect
+import java.lang.reflect.Type
 
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.jvm.internal.Reflection
 
 /**
  * Reindexer API
@@ -23,7 +26,7 @@ class Reindexer {
 
     private var url: String
     private var binding: Binding
-    private val namespaceMap: MutableMap<String, Namespace> = ConcurrentHashMap()
+    private val namespaces: MutableMap<String, ReindexerNamespace> = ConcurrentHashMap()
 
     private constructor(url: String, binding: Binding) {
         this.url = url
@@ -41,42 +44,30 @@ class Reindexer {
     fun openNamespace(namespace: String, options: NamespaceOptions, s: Class<*>) {
         registerNamespace(namespace, options, s)
         val ns = getNs(namespace)
-        val res = binding.openNamespace(ns.name, options.enableStorage, options.dropOnFileFormatError)
-        if (!res.isOk()) {
-            throw ReindexerException(res.message)
-        }
 
-/*
-        for (indexDef in ns.indexes) {
-            binding.addIndex(namespace, indexDef)
-        }
-*/
-
-        /*
-        for (int retry = 0; retry < 2; retry++) {
-            if (err = db.binding.OpenNamespace(namespace, opts.enableStorage, opts.dropOnFileFormatError); err != nil {
+        for (retry in 0..1) {
+            var res = binding.openNamespace(ns.name, options.enableStorage, options.dropOnFileFormatError)
+            if (!res.isOk()) {
                 break
             }
 
-            for _, indexDef := range ns.indexes {
-                if err = db.binding.AddIndex(namespace, indexDef); err != nil {
+            for (indexDef in ns.indexes) {
+                res = binding.addIndex(ns.name, indexDef)
+                if (!res.isOk()) {
                     break
                 }
             }
 
-            if err != nil {
-                rerr, ok := err.(bindings.Err)
-                if ok && rerr.Code() == bindings.ErrConflict && opts.dropOnIndexesConflict {
-                    db.binding.DropNamespace(namespace)
+            if (!res.isOk()) {
+                if (res.code == Consts.ErrConflict && options.dropOnIndexesConflict) {
+                    binding.dropNamespace(ns.name)
                     continue
                 }
-                db.binding.CloseNamespace(namespace)
+                binding.closeNamespace(ns.name)
                 break
             }
-
             break
         }
-        */
     }
 
     /**
@@ -87,14 +78,14 @@ class Reindexer {
      * @param item
      * @param <T>
     </T> */
-    fun <T: Any> upsert(namespace: String, item: T, vararg precepts: String) {
+    fun upsert(namespace: String, item: Any, vararg precepts: String) {
         val ns = getNs(namespace.toLowerCase())
         modifyItem(ns, item, null, Consts.ModeUpsert, arrayOf(*precepts))
     }
 
-    private fun getNs(namespace: String): Namespace {
+    private fun getNs(namespace: String): ReindexerNamespace {
         val name = namespace.toLowerCase()
-        return namespaceMap[name] ?: throw NsNotFoundException()
+        return namespaces[name] ?: throw NsNotFoundException()
     }
 
     /**
@@ -107,32 +98,24 @@ class Reindexer {
     private fun registerNamespace(namespace: String, options: NamespaceOptions, clazz: Class<*>) {
 
         val name = namespace.toLowerCase()
-        val ns = Namespace(name, clazz)
-        if (ns == namespaceMap[name]) {
+        val ns = ReindexerNamespace(name, clazz)
+        if (ns == namespaces[name]) {
             throw NsExistsException()
         }
-
         /*
-        ns := &reindexerNamespace{
-            cacheItems:    make(map[int]cacheItem, 100),
-            rtype:         t,
-            name:          namespace,
-            joined:        make(map[string][]int),
-            opts:          *opts,
-            cjsonState:    cjson.NewState(),
-            deepCopyIface: haveDeepCopy,
-            nsHash:        db.nsHashCounter,
-            opened:        false,
-        }
+            copier, haveDeepCopy := reflect.New(t).Interface().(DeepCopy)
+            if haveDeepCopy {
+                cpy := copier.DeepCopy()
+                cpyType := reflect.TypeOf(reflect.Indirect(reflect.ValueOf(cpy)).Interface())
+                if cpyType != reflect.TypeOf(s) {
+                    return ErrDeepCopyType
+                }
+            }
         */
-        ns.options = options
-        ns.indexes = parseIndex(name, clazz, ns.joined)
-        namespaceMap[name] = ns
-    }
-
-    // TODO
-    private fun parseIndex(name: String, clazz: Class<*>, joined: Map<String, IntArray>): List<IndexDef> {
-        return ArrayList()
+        ns.opts = options
+        ns.deepCopyIface = false // TODO
+        ns.indexes = Reflect.parseIndex(name, clazz, ns.joined)
+        namespaces[name] = ns
     }
 
     internal inner class PackItemResult {
@@ -140,9 +123,9 @@ class Reindexer {
         var stateToken = 0
     }
 
-    private fun <T : Any> packItem(ns: Namespace, item: T, json: ByteBuffer?, ser: Serializer): PackItemResult {
+    private fun packItem(ns: ReindexerNamespace, item: Any, json: ByteBuffer?, ser: Serializer): PackItemResult {
 
-        if (ns.clazz != item.javaClass) {
+        if (ns.rtype != item.javaClass) {
             throw IllegalArgumentException() // TODO ErrWrongType
         }
 
@@ -181,7 +164,7 @@ class Reindexer {
     /**
      * Returns number of query results rawQueryParams.count
      */
-    private fun <T : Any> modifyItem(ns: Namespace, item: T, json: ByteBuffer?, mode: Int, percepts: Array<String>) : Int {
+    private fun modifyItem(ns: ReindexerNamespace, item: Any, json: ByteBuffer?, mode: Int, percepts: Array<String>) : Int {
 
         val ser = ByteArraySerializer.newSerializer()  //cjson.NewPoolSerializer()
         val packedItem = packItem(ns, item, json, ser)

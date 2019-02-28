@@ -37,4 +37,5 @@ interface Serializer {
     fun putVBytes(a: ByteBuffer): Serializer
 
     fun write(a: ByteBuffer): Serializer
+    fun putVBytes(a: ByteArray): Serializer
 }

@@ -35,12 +35,14 @@ class RPCEncoder private constructor(private val cmd: Int, private val seq: Int)
                 body.putVarUInt(Consts.ValueString.toLong())
                 body.putVString(a)
             } else if (a is ByteBuffer) {
+                // TODO deprecated
+                body.putVarUInt(Consts.ValueString.toLong())
+                body.putVBytes(a)
+            } else if (a is ByteArray) {
                 body.putVarUInt(Consts.ValueString.toLong())
                 body.putVBytes(a)
             }
             // TODO
-            // case []byte:
-            //     in.bytesArg(t)
             // case []int32:
             //     in.int32ArrArg(t)
         }
