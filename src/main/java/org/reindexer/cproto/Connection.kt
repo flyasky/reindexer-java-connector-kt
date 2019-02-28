@@ -1,5 +1,6 @@
 package org.reindexer.cproto
 
+import org.reindexer.Res
 import org.reindexer.cjson.ByteArraySerializer
 import org.reindexer.connector.RawBuffer
 import org.reindexer.exceptions.NetworkException
@@ -36,27 +37,61 @@ class Connection {
         clientSocket.close()
     }
 
-    fun rpcCall(cmd: Int, vararg args: Any): RawBuffer {
+    fun rpcCall(cmd: Int, vararg args: Any): Res {
 
         // FIXME return !=0 on Exception
 
-        val `in` = RPCEncoder.newRPCEncoder(cmd, seq)
-        `in`.putAllArgs(*args)
+        val request = RPCEncoder.newRPCEncoder(cmd, seq)
+        request.putAllArgs(*args)
         val result: ByteArray
         try {
-            outToServer.write(`in`.bytes())
+            outToServer.write(request.bytes())
             result = readReply(inFromServer)
         } catch (e: IOException) {
             throw NetworkException(e)
         }
 
-        val out = RPCDecoder.newRPCDecoder(result)
-        out.decode()
-        println("FROM SERVER: " + Utils.bytesToHex(result))
-        println("RPCDecoder: $out")
+//        val response = RPCDecoder.newRPCDecoder(result)
+//        response.decode()
+//        println("FROM SERVER: " + Utils.bytesToHex(result))
+//        //println("RPCDecoder: $response")
 
         seq++  // FIXME
-        return NetBuffer(result)
+
+        val r = NetBuffer(result)
+        val err = r.parseArgs()
+        return Res(err, r)
+    }
+
+    fun readReply(din: DataInputStream): ByteArray {
+        val header = ByteArray(cprotoHdrLen)
+
+        try {
+            din.readFully(header)
+
+            val ser = ByteArraySerializer.getSerializer(header)
+            val magic = ser.getUInt32()
+            val version = ser.getUInt16()
+            /**/
+            ser.getUInt16()
+            val size = ser.getUInt32().toInt()
+            val rseq = ser.getUInt32()
+            if (magic != cprotoMagic.toUInt()) {
+                throw InvalidProtocolException(String.format("Invalid cproto magic '%08X'", magic))
+            }
+
+            if (version < cprotoVersion) {
+                throw InvalidProtocolException(String.format("Unsupported cproto version '%04X'. " +
+                        "This client expects reindexer server v1.9.8+", version))
+            }
+
+            val answer = ByteArray(size)
+            din.readFully(answer)
+
+            return answer
+        } catch (e: IOException) {
+            throw NetworkException(e)
+        }
     }
 
     companion object {
@@ -69,38 +104,6 @@ class Connection {
         private val queueSize = 40
         // TODO
         private var seq = 0
-
-        fun readReply(din: DataInputStream): ByteArray {
-            val header = ByteArray(cprotoHdrLen)
-
-            try {
-                din.readFully(header)
-
-                val ser = ByteArraySerializer.getSerializer(header)
-                val magic = ser.getUInt32()
-                val version = ser.getUInt16()
-                /**/
-                ser.getUInt16()
-                val size = ser.getUInt32().toInt()
-                val rseq = ser.getUInt32()
-                if (magic != cprotoMagic.toUInt()) {
-                    throw InvalidProtocolException(String.format("Invalid cproto magic '%08X'", magic))
-                }
-
-                if (version < cprotoVersion) {
-                    throw InvalidProtocolException(String.format("Unsupported cproto version '%04X'. " +
-                            "This client expects reindexer server v1.9.8+", version))
-                }
-
-                val answer = ByteArray(size)
-                din.readFully(answer)
-
-                return answer
-            } catch (e: IOException) {
-                throw NetworkException(e)
-            }
-
-        }
     }
 
 }

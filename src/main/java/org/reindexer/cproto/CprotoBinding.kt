@@ -2,10 +2,7 @@ package org.reindexer.cproto
 
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
-import org.reindexer.IndexDef
-import org.reindexer.NamespaceDef
-import org.reindexer.RawResult
-import org.reindexer.StorageOpts
+import org.reindexer.*
 import org.reindexer.connector.Binding
 import org.reindexer.exceptions.UnimplementedException
 
@@ -22,13 +19,7 @@ class CprotoBinding : Binding {
         READ, WRITE
     }
 
-    private fun login(user: String, password: String, database: String): Int {
-        c.rpcCall(cmdLogin, user, password, database)
-        isLoggedIn = true
-        return 0 // FIXME
-    }
-
-    override fun init(url: String, vararg options: Any): Int {
+    override fun init(url: String, vararg options: Any): Err {
         val uri: URI
         try {
             uri = URI(url)
@@ -43,7 +34,7 @@ class CprotoBinding : Binding {
         var user = ""
         var password = ""
         if (userInfo != null) {
-            val userInfoArray = userInfo.split(":".toRegex()).dropLastWhile({ it.isEmpty() }).toTypedArray()
+            val userInfoArray = userInfo.split(":")
             if (userInfoArray.size == 2) {
                 user = userInfoArray[0]
                 password = userInfoArray[1]
@@ -52,10 +43,16 @@ class CprotoBinding : Binding {
             }
         }
         c = Connection(host, port)
-        return login(user, password, database)
+        var result = c.rpcCall(cmdLogin, user, password, database)
+        if (result.error.code == 0) {
+            isLoggedIn = true
+            return Err.newOk()
+        } else {
+            return result.error
+        }
     }
 
-    override fun openNamespace(namespace: String, enableStorage: Boolean, dropOnFileFormatError: Boolean): Int {
+    override fun openNamespace(namespace: String, enableStorage: Boolean, dropOnFileFormatError: Boolean): Err {
         val storageOpts = StorageOpts(enableStorage, dropOnFileFormatError, true)
         val namespaceDef = NamespaceDef(storageOpts, namespace)
         val gson = GsonBuilder()
@@ -64,16 +61,15 @@ class CprotoBinding : Binding {
         val sNamespaceDef = gson.toJson(namespaceDef)
         // {"name":"items"} -> reindexer_tool -> {"name":"items","storage":{"enabled":true},"indexes":[]}
         //rpcCallNoResults(OperationType.WRITE, cmdOpenNamespace, sNamespaceDef); // also ok
-        rpcCallNoResults(OperationType.WRITE, cmdOpenNamespace, ByteBuffer.wrap(sNamespaceDef.toByteArray()))
-        return 0
+        return rpcCallNoResults(OperationType.WRITE, cmdOpenNamespace, ByteBuffer.wrap(sNamespaceDef.toByteArray()))
     }
 
-    override fun addIndex(namespace: String, indexDef: IndexDef): Int {
+    override fun addIndex(namespace: String, indexDef: IndexDef): Err {
         TODO("not implemented")
     }
 
     override fun modifyItem(nsHash: Int, namespace: String, format: Int,
-                            data: ByteArray, mode: Int, percepts: Array<String>, stateToken: Int): RawResult {
+                            data: ByteArray, mode: Int, percepts: Array<String>, stateToken: Int): Res {
         val packedPercepts = ByteBuffer.allocate(0)
         if (percepts.isNotEmpty()) {
             throw UnimplementedException()
@@ -88,21 +84,14 @@ class CprotoBinding : Binding {
                 packedPercepts = ser1.Bytes()
              */
         }
-
-        try {
-            return rpcCall(OperationType.WRITE, cmdModifyItem,
+        return rpcCall(OperationType.WRITE, cmdModifyItem,
                     namespace, format, ByteBuffer.wrap(data), mode, packedPercepts, stateToken, 0)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return RawResult(0, null)
-        }
-
     }
 
 
-    private fun rpcCall(op: OperationType, cmd: Int, vararg args: Any): RawResult {
+    private fun rpcCall(op: OperationType, cmd: Int, vararg args: Any): Res {
         // FIXME return !=0 on Exception
-        return RawResult(0, c.rpcCall(cmd, *args))
+        return c.rpcCall(cmd, *args)
 
         /* TODO
         var attempts int
@@ -117,7 +106,7 @@ class CprotoBinding : Binding {
                 return
             }
             switch err.(type) {
-            case net.Error, *net.OpError:
+            case net.Err, *net.OpError:
                 time.Sleep(time.Second * time.Duration(i))
             default:
                 return
@@ -126,29 +115,28 @@ class CprotoBinding : Binding {
         */
     }
 
-    private fun rpcCallNoResults(op: OperationType, cmd: Int, vararg args: Any): Int {
-        rpcCall(op, cmd, *args)
-        // FIXME return !=0 on Exception
-        return 0
+    private fun rpcCallNoResults(op: OperationType, cmd: Int, vararg args: Any): Err {
+        val res = rpcCall(op, cmd, *args)
+        return res.error
     }
 
-    override fun closeNamespace(namespace: String): Int {
+    override fun closeNamespace(namespace: String): Err {
         TODO("not implemented")
     }
 
-    override fun dropNamespace(namespace: String): Int {
+    override fun dropNamespace(namespace: String): Err {
         TODO("not implemented")
     }
 
-    override fun enableStorage(namespace: String): Int {
+    override fun enableStorage(namespace: String): Err {
         TODO("not implemented")
     }
 
-    override fun updateIndex(namespace: String, indexDef: IndexDef): Int {
+    override fun updateIndex(namespace: String, indexDef: IndexDef): Err {
         TODO("not implemented")
     }
 
-    override fun dropIndex(namespace: String, index: String): Int {
+    override fun dropIndex(namespace: String, index: String): Err {
         TODO("not implemented")
     }
 

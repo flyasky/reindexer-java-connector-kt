@@ -1,7 +1,8 @@
 package org.reindexer.connector
 
+import org.reindexer.Err
 import org.reindexer.IndexDef
-import org.reindexer.RawResult
+import org.reindexer.Res
 
 /**
  * Raw binding to reindexer
@@ -16,16 +17,16 @@ interface Binding {
      * @param url
      * @param options
      */
-    fun init(url: String, vararg options: Any): Int
+    fun init(url: String, vararg options: Any): Err
 
-    fun openNamespace(namespace: String, enableStorage: Boolean, dropOnFileFormatError: Boolean): Int
-    fun closeNamespace(namespace: String): Int
-    fun dropNamespace(namespace: String): Int
-    fun enableStorage(namespace: String): Int
+    fun openNamespace(namespace: String, enableStorage: Boolean, dropOnFileFormatError: Boolean): Err
+    fun closeNamespace(namespace: String): Err
+    fun dropNamespace(namespace: String): Err
+    fun enableStorage(namespace: String): Err
 
-    fun addIndex(namespace: String, indexDef: IndexDef): Int
-    fun updateIndex(namespace: String, indexDef: IndexDef): Int
-    fun dropIndex(namespace: String, index: String): Int
+    fun addIndex(namespace: String, indexDef: IndexDef): Err
+    fun updateIndex(namespace: String, indexDef: IndexDef): Err
+    fun dropIndex(namespace: String, index: String): Err
 
     /**
      *
@@ -42,7 +43,7 @@ interface Binding {
      * @return
      */
     fun modifyItem(nsHash: Int, namespace: String, format: Int, data: ByteArray, mode: Int, percepts: Array<String>,
-                   stateToken: Int): RawResult
+                   stateToken: Int): Res
 
     /*
         Clone() RawBinding
