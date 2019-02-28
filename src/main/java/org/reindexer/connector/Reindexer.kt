@@ -187,6 +187,8 @@ class Reindexer(url: String, private val binding: Binding) {
             throw ReindexerException(res.error.message)
         }
 
+        return 0
+
         /*TODO
 
             for tryCount := 0; tryCount < 2; tryCount++ {
