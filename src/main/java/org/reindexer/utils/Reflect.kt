@@ -1,6 +1,10 @@
 package org.reindexer.utils;
 
+import org.reindexer.annotations.Reindex
+import org.reindexer.connector.bindings.Consts
 import org.reindexer.connector.bindings.def.IndexDef
+import org.reindexer.connector.exceptions.ReindexerException
+import java.lang.reflect.Type
 import java.nio.ByteBuffer
 
 /**
@@ -15,7 +19,7 @@ object Reflect {
         return res
     }
 
-    fun parse(indexDefs: List<IndexDef>, st: Class<*>, subArray: Boolean, aReindexBasePath: String, aJsonBasePath: String,
+    fun parse(indexDefs: ArrayList<IndexDef>, st: Class<*>, subArray: Boolean, aReindexBasePath: String, aJsonBasePath: String,
               joined: Map<String, IntArray>) {
 
         var jsonBasePath = aJsonBasePath
@@ -28,8 +32,39 @@ object Reflect {
             reindexBasePath += "."
         }
 
-        for (i in 0..st.fields.size - 1) {
+        for (i in 0..st.declaredFields.size - 1) {
+            val tagsSlice = st.declaredFields[i].getAnnotation(Reindex::class.java).value.split(",", limit=3)
+            val idxName = tagsSlice[0]
+            val idxType = ""
+            val idxOpts = ""
+            if (idxName == "-") {
+                continue
+            }
+            var reindexPath = reindexBasePath + idxName
+            var idxSettings = splitOptions(idxOpts)
+            var (opts, idxSettingsNew) = parseOpts(idxSettings)
+            idxSettings = idxSettingsNew
 
+            if (opts.isPk && idxName.trim() == "") {
+                throw ReindexerException("No index name is specified for primary key in field $st.fields[i].name")
+            }
+
+            if (1 == 1) {
+
+            } else if (idxName.length > 0) {
+                //collateMode, sortOrderLetters := parseCollate(&idxSettings)
+                /*if fieldType, err := getFieldType(t); err != nil {
+                return err*/
+            } else {
+                val fieldType = getFieldType(st)
+
+                var indexDef = IndexDef.makeIndexDef(reindexPath, emptyList(), idxType, fieldType, opts,
+                        Consts.CollateNone, "")
+                indexDefAppend(indexDefs, indexDef, opts.isAppenable)
+            }
+            if (idxSettings.size > 0) {
+                throw ReindexerException("Unknown index settings are found: $idxSettings")
+            }
         }
 
 
@@ -124,6 +159,61 @@ object Reflect {
          */
     }
 
+    private fun indexDefAppend(indexDefs: ArrayList<IndexDef>, indexDef: IndexDef, appenable: Boolean) {
+        indexDefs.add(indexDef)
+        /*lang:go
+            name := indexDef.Name
+
+            var foundIndexPos int
+            var foundIndexDef bindings.IndexDef
+
+            indexDefExists := false
+            for pos, indexDef := range *indexDefs {
+                if (*indexDefs)[pos].Name == name {
+                    indexDefExists = true
+                    foundIndexDef = indexDef
+                    foundIndexPos = pos
+
+                    break
+                }
+            }
+
+            if !indexDefExists {
+                *indexDefs = append(*indexDefs, indexDef)
+
+                return nil
+            }
+
+            if indexDef.IndexType != foundIndexDef.IndexType {
+                return fmt.Errorf("Index %s has another type: %+v", name, indexDef)
+            }
+
+            if len(indexDef.JSONPaths) > 0 && indexDef.IndexType != "composite" {
+                jsonPaths := foundIndexDef.JSONPaths
+                isPresented := false
+                for _, jsonPath := range jsonPaths {
+                    if jsonPath == indexDef.JSONPaths[0] {
+                        isPresented = true
+                        break
+                    }
+                }
+
+                if !isPresented {
+                    if !isAppendable {
+                        return fmt.Errorf("Index %s is not appendable", name)
+                    }
+
+                    foundIndexDef.JSONPaths = append(foundIndexDef.JSONPaths, indexDef.JSONPaths[0])
+                }
+
+                foundIndexDef.IsArray = true
+                (*indexDefs)[foundIndexPos] = foundIndexDef
+            }
+            return nil
+
+         */
+    }
+
     fun splitOptions(str: String): List<String> {
         val words = ArrayList<String>()
         var word: ByteBuffer = ByteBuffer.allocate(10)
@@ -154,7 +244,7 @@ object Reflect {
         return words
     }
 
-    fun parseOpts(idxSettingsBuf: List<String>): IndexOptions {
+    fun parseOpts(idxSettingsBuf: List<String>): Pair<IndexOptions, List<String>> {
         val newIdxSettingsBuf = ArrayList<String>()
 
         val opts = IndexOptions()
@@ -168,8 +258,29 @@ object Reflect {
                 else -> newIdxSettingsBuf.add(idxSetting)
             }
         }
-        //idxSettingsBuf = newIdxSettingsBuf    //???
-        return opts
+        return Pair(opts, newIdxSettingsBuf)
+    }
+
+    fun getFieldType(t: Type): String {
+        when (t.typeName) {
+            "Boolean" -> return "bool"
+            "Short", "Integer", "UInt16", "UInt32" -> return "int"
+            /*case reflect.Int, reflect.Uint:
+            if unsafe.Sizeof(int(0)) == unsafe.Sizeof(int64(0)) {
+                return "int64", nil
+            } else {
+                return "int", nil
+            }*/
+            "int", "Int" -> return "int"
+            "Int64", "Uint64" -> return "int64"
+            "String" -> return "string"
+            "Double", "Float" -> return "double"
+            /*case reflect.Struct:
+            return "composite", nil
+            case reflect.Array, reflect.Slice, reflect.Ptr:
+            return getFieldType(t.Elem())*/
+        }
+        throw ReindexerException("Invalid reflection")
     }
 
 

@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.internal.Reflection
 
 /**
- * Reindexer API
+ * Reindex API
  */
 class Reindexer {
 
@@ -236,10 +236,10 @@ class Reindexer {
             when (protocol) {
                 "cproto" -> return Reindexer(url, Cproto())
                 "http" ->
-                    //return new Reindexer(url, new RestApiBinding());
+                    //return new Reindex(url, new RestApiBinding());
                     throw UnimplementedException()
                 "builtin" ->
-                    //return new Reindexer(url, new BuiltinBinding());
+                    //return new Reindex(url, new BuiltinBinding());
                     throw UnimplementedException()
                 "builtinserver" -> throw UnimplementedException()
                 else -> throw IllegalArgumentException()
