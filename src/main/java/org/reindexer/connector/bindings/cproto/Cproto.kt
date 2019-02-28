@@ -2,11 +2,13 @@ package org.reindexer.connector.bindings.cproto
 
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
-import org.reindexer.connector.*
-import org.reindexer.connector.def.IndexDef
-import org.reindexer.connector.def.NamespaceDef
+import org.reindexer.connector.bindings.Binding
+import org.reindexer.connector.bindings.Err
+import org.reindexer.connector.bindings.Res
+import org.reindexer.connector.bindings.def.IndexDef
+import org.reindexer.connector.bindings.def.NamespaceDef
 import org.reindexer.connector.exceptions.UnimplementedException
-import org.reindexer.connector.options.StorageOpts
+import org.reindexer.connector.bindings.def.StorageOpts
 
 import java.net.URI
 import java.net.URISyntaxException

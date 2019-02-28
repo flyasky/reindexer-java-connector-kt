@@ -1,9 +1,11 @@
 package org.reindexer.connector
 
 import com.google.gson.GsonBuilder
+import org.reindexer.connector.bindings.Binding
+import org.reindexer.connector.bindings.Consts
 import org.reindexer.connector.cjson.ByteArraySerializer
 import org.reindexer.connector.cjson.Serializer
-import org.reindexer.connector.def.IndexDef
+import org.reindexer.connector.bindings.def.IndexDef
 import org.reindexer.connector.bindings.cproto.Cproto
 import org.reindexer.connector.exceptions.NsExistsException
 import org.reindexer.connector.exceptions.NsNotFoundException
@@ -39,7 +41,7 @@ class Reindexer {
     fun openNamespace(namespace: String, options: NamespaceOptions, s: Class<*>) {
         registerNamespace(namespace, options, s)
         val ns = getNs(namespace)
-        val res = binding.openNamespace(ns.name, options.enableStorage(), options.dropOnFileFormatError())
+        val res = binding.openNamespace(ns.name, options.enableStorage, options.dropOnFileFormatError)
         if (!res.isOk()) {
             throw ReindexerException(res.message)
         }

@@ -1,7 +1,7 @@
 package org.reindexer.connector.bindings.cproto
 
 import org.apache.commons.lang3.ArrayUtils
-import org.reindexer.connector.Consts
+import org.reindexer.connector.bindings.Consts
 import org.reindexer.connector.cjson.ByteArraySerializer
 import org.reindexer.connector.cjson.Serializer
 

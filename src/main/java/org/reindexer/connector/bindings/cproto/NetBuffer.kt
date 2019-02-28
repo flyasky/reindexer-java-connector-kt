@@ -1,8 +1,8 @@
 package org.reindexer.connector.bindings.cproto
 
-import org.reindexer.connector.Err
-import org.reindexer.connector.FetchMore
-import org.reindexer.connector.RawBuffer
+import org.reindexer.connector.bindings.Err
+import org.reindexer.connector.bindings.FetchMore
+import org.reindexer.connector.bindings.RawBuffer
 import java.util.ArrayList
 
 class NetBuffer : RawBuffer, FetchMore {

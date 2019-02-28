@@ -1,4 +1,4 @@
-package org.reindexer.connector.options
+package org.reindexer.connector.bindings.def
 
 /*
 type StorageOpts struct {

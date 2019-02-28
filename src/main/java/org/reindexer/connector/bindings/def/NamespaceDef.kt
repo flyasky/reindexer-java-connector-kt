@@ -1,6 +1,4 @@
-package org.reindexer.connector.def
-
-import org.reindexer.connector.options.StorageOpts
+package org.reindexer.connector.bindings.def
 
 /*
 type NamespaceDef struct {

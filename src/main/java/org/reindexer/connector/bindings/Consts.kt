@@ -1,4 +1,4 @@
-package org.reindexer.connector
+package org.reindexer.connector.bindings
 
 object Consts {
 

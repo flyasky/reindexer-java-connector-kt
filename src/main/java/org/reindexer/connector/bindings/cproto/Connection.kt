@@ -1,6 +1,6 @@
 package org.reindexer.connector.bindings.cproto
 
-import org.reindexer.connector.Res
+import org.reindexer.connector.bindings.Res
 import org.reindexer.connector.cjson.ByteArraySerializer
 import org.reindexer.connector.exceptions.NetworkException
 import org.reindexer.connector.exceptions.InvalidProtocolException

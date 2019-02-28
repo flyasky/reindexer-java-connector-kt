@@ -1,6 +1,6 @@
-package org.reindexer.connector
+package org.reindexer.connector.bindings
 
-import org.reindexer.connector.Err
+import org.reindexer.connector.bindings.Err
 
 interface FetchMore {
 

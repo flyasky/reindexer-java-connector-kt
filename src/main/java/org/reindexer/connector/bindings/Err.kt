@@ -1,4 +1,4 @@
-package org.reindexer.connector
+package org.reindexer.connector.bindings
 
 // struct Error from interface.go
 data class Err(val message: String, val code: Int) {

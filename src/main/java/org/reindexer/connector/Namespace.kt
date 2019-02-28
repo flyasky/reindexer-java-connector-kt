@@ -1,7 +1,6 @@
 package org.reindexer.connector
 
-import org.reindexer.connector.def.IndexDef
-import org.reindexer.connector.options.DefaultNamespaceOptions
+import org.reindexer.connector.bindings.def.IndexDef
 import org.reindexer.connector.options.NamespaceOptions
 
 // cacheItems    map[int]cacheItem
@@ -13,7 +12,7 @@ import org.reindexer.connector.options.NamespaceOptions
 data class Namespace(val name: String, val clazz: Class<*>) {
     val joined: Map<String, IntArray> = HashMap()
     var indexes: List<IndexDef> = ArrayList()
-    var options: NamespaceOptions = DefaultNamespaceOptions()
+    var options: NamespaceOptions = NamespaceOptions.defaultOptions()
 }
 
 
