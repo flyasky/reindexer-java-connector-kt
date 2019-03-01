@@ -3,26 +3,26 @@ package org.reindexer.connector.bindings.def
 import org.reindexer.connector.bindings.Consts
 import org.reindexer.utils.IndexOptions
 
-data class IndexDef(var name: String = "id") {     //`json:"name"`
-    lateinit var JSONPaths: List<String>   //`json:"json_paths"`
-    var indexType: String = "pk"      //`json:"index_type"`
-    lateinit var fieldType: String      //`json:"field_type"`
-    var isPK: Boolean = true           //`json:"is_pk"`
-    var isArray: Boolean = false        //`json:"is_array"`
-    var isDense: Boolean = false        //`json:"is_dense"`
-    var isSparse: Boolean = false       //`json:"is_sparse"`
-    lateinit var collateMode: String    //`json:"collate_mode"`
-    lateinit var sortOrder: String      //`json:"sort_order_letters"`
-    //lateinit var config: Any            //`json:"config"` //TODO
+data class IndexDef(var name: String = "id") {
+    lateinit var jsonPaths: List<String>
+    var indexType: String = "pk"
+    lateinit var fieldType: String
+    var isPk: Boolean = true
+    var isArray: Boolean = false
+    var isDense: Boolean = false
+    var isSparse: Boolean = false
+    lateinit var collateMode: String
+    lateinit var sortOrder: String
+    //lateinit var config: Any //`json:"config"` //TODO
 
     private constructor(name: String, jsonPath: List<String>, idxType: String,
-                fieldType: String, isPk: Boolean, isArray: Boolean, isDense: Boolean,
-                isSparse: Boolean, collateMode: String, sortOrder: String) : this() {
-        this.JSONPaths = jsonPath
+                        fieldType: String, isPk: Boolean, isArray: Boolean, isDense: Boolean,
+                        isSparse: Boolean, collateMode: String, sortOrder: String) : this() {
+        this.jsonPaths = jsonPath
         this.name = name
         this.fieldType = fieldType
         this.indexType = idxType
-        this.isPK = isPk
+        this.isPk = isPk
         this.isArray = isArray
         this.isDense = isDense
         this.isSparse = isSparse
@@ -33,7 +33,7 @@ data class IndexDef(var name: String = "id") {     //`json:"name"`
     companion object {
         fun makeIndexDef(index: String, jsonPaths: List<String>, indexType: String,
                          fieldType: String, opts: IndexOptions,
-                         collateMode: Int, sortOrder: String) : IndexDef {
+                         collateMode: Int, sortOrder: String): IndexDef {
             var cm = ""
             when (collateMode) {
                 Consts.CollateASCII -> cm = "ascii"
@@ -42,16 +42,16 @@ data class IndexDef(var name: String = "id") {     //`json:"name"`
                 Consts.CollateCustom -> cm = "custom"
             }
             return IndexDef(
-                index,
-                jsonPaths,
-                indexType,
-                fieldType,
-                opts.isArray,
-                opts.isPk,
-                opts.isDense,
-                opts.isSparse,
-                cm,
-                sortOrder
+                    index,
+                    jsonPaths,
+                    indexType,
+                    fieldType,
+                    opts.isPk,
+                    opts.isArray,
+                    opts.isDense,
+                    opts.isSparse,
+                    cm,
+                    sortOrder
             )
         }
     }

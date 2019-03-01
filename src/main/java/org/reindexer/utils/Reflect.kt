@@ -6,6 +6,7 @@ import org.reindexer.connector.bindings.def.IndexDef
 import org.reindexer.connector.exceptions.ReindexerException
 import java.lang.reflect.Type
 import java.nio.ByteBuffer
+import java.util.*
 
 /**
  *
@@ -34,11 +35,24 @@ object Reflect {
 
         for (i in 0..st.declaredFields.size - 1) {
             val tagsSlice = st.declaredFields[i].getAnnotation(Reindex::class.java).value.split(",", limit=3)
+            var jsonPath = "" // = // TODO @Json annotation
+
+            if (jsonPath.length == 0) {
+                jsonPath = st.declaredFields[i].name
+            }
+            jsonPath = jsonBasePath + jsonPath
+
             val idxName = tagsSlice[0]
-            val idxType = ""
-            val idxOpts = ""
+            var idxType = ""
+            var idxOpts = ""
             if (idxName == "-") {
                 continue
+            }
+            if (tagsSlice.size > 1) {
+                idxType = tagsSlice[1]
+            }
+            if (tagsSlice.size > 2) {
+                idxOpts = tagsSlice[2]
             }
             var reindexPath = reindexBasePath + idxName
             var idxSettings = splitOptions(idxOpts)
@@ -49,17 +63,11 @@ object Reflect {
                 throw ReindexerException("No index name is specified for primary key in field $st.fields[i].name")
             }
 
-            if (1 == 1) {
-
-            } else if (idxName.length > 0) {
+            if (idxName.length > 0) {
                 //collateMode, sortOrderLetters := parseCollate(&idxSettings)
-                /*if fieldType, err := getFieldType(t); err != nil {
-                return err*/
-            } else {
-                val fieldType = getFieldType(st)
-
-                var indexDef = IndexDef.makeIndexDef(reindexPath, emptyList(), idxType, fieldType, opts,
-                        Consts.CollateNone, "")
+                val fieldType = getFieldType(st.declaredFields[i].genericType)
+                var indexDef = IndexDef.makeIndexDef(reindexPath, Arrays.asList(jsonPath),
+                        idxType, fieldType, opts, Consts.CollateNone, "")
                 indexDefAppend(indexDefs, indexDef, opts.isAppenable)
             }
             if (idxSettings.size > 0) {
@@ -188,11 +196,11 @@ object Reflect {
                 return fmt.Errorf("Index %s has another type: %+v", name, indexDef)
             }
 
-            if len(indexDef.JSONPaths) > 0 && indexDef.IndexType != "composite" {
-                jsonPaths := foundIndexDef.JSONPaths
+            if len(indexDef.jsonPaths) > 0 && indexDef.IndexType != "composite" {
+                jsonPaths := foundIndexDef.jsonPaths
                 isPresented := false
                 for _, jsonPath := range jsonPaths {
-                    if jsonPath == indexDef.JSONPaths[0] {
+                    if jsonPath == indexDef.jsonPaths[0] {
                         isPresented = true
                         break
                     }
@@ -203,7 +211,7 @@ object Reflect {
                         return fmt.Errorf("Index %s is not appendable", name)
                     }
 
-                    foundIndexDef.JSONPaths = append(foundIndexDef.JSONPaths, indexDef.JSONPaths[0])
+                    foundIndexDef.jsonPaths = append(foundIndexDef.jsonPaths, indexDef.jsonPaths[0])
                 }
 
                 foundIndexDef.IsArray = true
@@ -214,29 +222,31 @@ object Reflect {
          */
     }
 
-    fun splitOptions(str: String): List<String> {
+    fun splitOptions(str: String): ArrayList<String> {
         val words = ArrayList<String>()
-        var word: ByteBuffer = ByteBuffer.allocate(10)
+        var word = ""
         val strLen = str.length
         var i = 0
         while (i < strLen) {
             if (str[i] == '\\' && i < strLen-1 && str[i+1] == ',') {
-                word.put(str[i+1].toByte())
-                i++
+                word += str[i+1]
+                i += 2
                 continue
             }
 
             if (str[i] == ',') {
-                words.add(word.toString())
-                word.clear()
+                words.add(word)
+                word = ""
+                i++
                 continue
             }
 
-            word.put(str[i].toByte())
+            word += str[i]
 
             if (i == strLen-1) {
-                words.add(word.toString())
-                word.clear()
+                words.add(word)
+                word = ""
+                i++
                 continue
             }
             i++
@@ -244,7 +254,8 @@ object Reflect {
         return words
     }
 
-    fun parseOpts(idxSettingsBuf: List<String>): Pair<IndexOptions, List<String>> {
+    fun parseOpts(idxSettingsBuf: List<String>): Pair<IndexOptions, ArrayList<String>> {
+
         val newIdxSettingsBuf = ArrayList<String>()
 
         val opts = IndexOptions()
@@ -263,8 +274,8 @@ object Reflect {
 
     fun getFieldType(t: Type): String {
         when (t.typeName) {
-            "Boolean" -> return "bool"
-            "Short", "Integer", "UInt16", "UInt32" -> return "int"
+            "java.lang.Boolean" -> return "bool"
+            "java.lang.Short", "java.lang.Integer", "UInt16", "UInt32" -> return "int"
             /*case reflect.Int, reflect.Uint:
             if unsafe.Sizeof(int(0)) == unsafe.Sizeof(int64(0)) {
                 return "int64", nil
@@ -273,7 +284,7 @@ object Reflect {
             }*/
             "int", "Int" -> return "int"
             "Int64", "Uint64" -> return "int64"
-            "String" -> return "string"
+            "java.lang.String" -> return "string"
             "Double", "Float" -> return "double"
             /*case reflect.Struct:
             return "composite", nil
