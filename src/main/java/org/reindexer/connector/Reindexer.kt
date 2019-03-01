@@ -13,6 +13,7 @@ import org.reindexer.connector.exceptions.ReindexerException
 import org.reindexer.connector.exceptions.UnimplementedException
 import org.reindexer.connector.options.NamespaceOptions
 import org.reindexer.utils.Reflect
+import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
 
 import java.nio.ByteBuffer
@@ -23,6 +24,8 @@ import kotlin.jvm.internal.Reflection
  * Reindex API
  */
 class Reindexer {
+
+    private val LOGGER = LoggerFactory.getLogger("org.reindexer.Reindexer")
 
     private var url: String
     private var binding: Binding
@@ -42,6 +45,7 @@ class Reindexer {
     }
 
     fun openNamespace(namespace: String, options: NamespaceOptions, s: Class<*>) {
+        LOGGER.debug("OpenNamespace '$namespace'")
         registerNamespace(namespace, options, s)
         val ns = getNs(namespace)
 
@@ -53,16 +57,20 @@ class Reindexer {
 
             for (indexDef in ns.indexes) {
                 res = binding.addIndex(ns.name, indexDef)
+                LOGGER.debug("AddIndex '${indexDef.name}' result ${res.message}")
                 if (!res.isOk()) {
+                    LOGGER.debug("AddIndex error ${res.code} ${res.message}")
                     break
                 }
             }
 
             if (!res.isOk()) {
                 if (res.code == Consts.ErrConflict && options.dropOnIndexesConflict) {
+                    LOGGER.debug("DropNamespace '$namespace'")
                     binding.dropNamespace(ns.name)
                     continue
                 }
+                LOGGER.debug("CloseNamespace '$namespace'")
                 binding.closeNamespace(ns.name)
                 break
             }
@@ -230,6 +238,7 @@ class Reindexer {
     }
 
     companion object {
+
         @JvmStatic
         fun newReindexer(url: String): Reindexer {
             val protocol = url.substring(0, url.indexOf(":"))
