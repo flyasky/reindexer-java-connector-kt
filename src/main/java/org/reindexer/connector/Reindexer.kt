@@ -13,6 +13,7 @@ import org.reindexer.connector.exceptions.ReindexerException
 import org.reindexer.connector.exceptions.UnimplementedException
 import org.reindexer.connector.options.NamespaceOptions
 import org.reindexer.utils.Reflect
+import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
 
 import java.nio.ByteBuffer
@@ -20,9 +21,11 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.internal.Reflection
 
 /**
- * Reindexer API
+ * Reindex API
  */
 class Reindexer {
+
+    private val LOGGER = LoggerFactory.getLogger("org.reindexer.Reindexer")
 
     private var url: String
     private var binding: Binding
@@ -42,6 +45,7 @@ class Reindexer {
     }
 
     fun openNamespace(namespace: String, options: NamespaceOptions, s: Class<*>) {
+        LOGGER.debug("OpenNamespace '$namespace'")
         registerNamespace(namespace, options, s)
         val ns = getNs(namespace)
 
@@ -53,16 +57,20 @@ class Reindexer {
 
             for (indexDef in ns.indexes) {
                 res = binding.addIndex(ns.name, indexDef)
+                LOGGER.debug("AddIndex '${indexDef.name}' result ${res.message}")
                 if (!res.isOk()) {
+                    LOGGER.debug("AddIndex error ${res.code} ${res.message}")
                     break
                 }
             }
 
             if (!res.isOk()) {
                 if (res.code == Consts.ErrConflict && options.dropOnIndexesConflict) {
+                    LOGGER.debug("DropNamespace '$namespace'")
                     binding.dropNamespace(ns.name)
                     continue
                 }
+                LOGGER.debug("CloseNamespace '$namespace'")
                 binding.closeNamespace(ns.name)
                 break
             }
@@ -230,16 +238,17 @@ class Reindexer {
     }
 
     companion object {
+
         @JvmStatic
         fun newReindexer(url: String): Reindexer {
             val protocol = url.substring(0, url.indexOf(":"))
             when (protocol) {
                 "cproto" -> return Reindexer(url, Cproto())
                 "http" ->
-                    //return new Reindexer(url, new RestApiBinding());
+                    //return new Reindex(url, new RestApiBinding());
                     throw UnimplementedException()
                 "builtin" ->
-                    //return new Reindexer(url, new BuiltinBinding());
+                    //return new Reindex(url, new BuiltinBinding());
                     throw UnimplementedException()
                 "builtinserver" -> throw UnimplementedException()
                 else -> throw IllegalArgumentException()

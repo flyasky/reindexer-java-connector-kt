@@ -178,10 +178,10 @@ class Cproto : Binding {
         internal val cmdEnumNamespaces = 22
         internal val cmdDropIndex = 24
         internal val cmdUpdateIndex = 25
-        internal val cmdStartTransaction = 28 // FIXME
-        internal val cmdAddTxItem = 29
-        internal val cmdCommitTx = 30
-        internal val cmdRollbackTx = 31
+        internal val cmdStartTransaction = 26
+        internal val cmdAddTxItem = 27
+        internal val cmdCommitTx = 28
+        internal val cmdRollbackTx = 29
         internal val cmdCommit = 32
         internal val cmdModifyItem = 33
         internal val cmdDeleteQuery = 34
