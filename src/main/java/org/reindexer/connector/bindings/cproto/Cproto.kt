@@ -2,10 +2,7 @@ package org.reindexer.connector.bindings.cproto
 
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
-import org.reindexer.connector.bindings.Binding
-import org.reindexer.connector.bindings.Err
-import org.reindexer.connector.bindings.Logger
-import org.reindexer.connector.bindings.Res
+import org.reindexer.connector.bindings.*
 import org.reindexer.connector.bindings.def.IndexDef
 import org.reindexer.connector.bindings.def.NamespaceDef
 import org.reindexer.connector.exceptions.UnimplementedException
@@ -121,6 +118,31 @@ class Cproto : Binding {
         }
         return rpcCall(OperationType.WRITE, cmdModifyItem,
                     namespace, format, ByteBuffer.wrap(data), mode, packedPercepts, stateToken, 0)
+    }
+
+    override fun selectQuery(data: ByteArray, withItems: Boolean, ptVersions: IntArray, fetchCount: Int): Res {
+        var flags = 0
+        if (withItems) {
+            flags = flags or Consts.ResultsJson
+        } else {
+            flags = flags or Consts.ResultsCJson or Consts.ResultsWithPayloadTypes or Consts.ResultsWithItemID
+        }
+
+        var realFetchCount = fetchCount
+        if (fetchCount <= 0) {
+            realFetchCount = Int.MAX_VALUE
+        }
+
+        val res = rpcCall(OperationType.READ, cmdSelect, data, flags, realFetchCount, ptVersions)
+        if (!res.error.isOk()) {
+            res.rawBuffer.free()
+            return res  // TODO е передавать буфер
+        }
+        /*buf.result = buf.args[0].([]byte)
+        buf.reqID = buf.args[1].(int)
+        buf.needClose = buf.reqID != -1
+        return buf, nil*/
+        return res
     }
 
     override fun enableStorage(namespace: String): Err {

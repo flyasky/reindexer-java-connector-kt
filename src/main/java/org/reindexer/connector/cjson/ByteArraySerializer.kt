@@ -69,6 +69,10 @@ class ByteArraySerializer : Serializer {
         return temp xor (raw and (1L shl 63))
     }
 
+    override fun putVarCUInt(v: Int): Serializer {
+        return putVarUInt(v.toLong())
+    }
+
     override fun getVString(): String {
         val l = getVarUInt().toInt()
         if (pos + l > buf.size) {

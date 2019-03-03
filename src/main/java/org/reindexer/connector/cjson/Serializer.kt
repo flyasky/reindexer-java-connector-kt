@@ -32,10 +32,13 @@ interface Serializer {
 
     fun putVarInt(a: Long): Serializer
 
+    fun putVarCUInt(v: Int): Serializer
+
     fun putVString(a: String): Serializer
 
     fun putVBytes(a: ByteBuffer): Serializer
 
     fun write(a: ByteBuffer): Serializer
+
     fun putVBytes(a: ByteArray): Serializer
 }

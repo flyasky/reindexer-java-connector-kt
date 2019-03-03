@@ -3,22 +3,23 @@ package org.reindexer.connector
 import com.google.gson.GsonBuilder
 import org.reindexer.connector.bindings.Binding
 import org.reindexer.connector.bindings.Consts
+import org.reindexer.connector.bindings.Res
 import org.reindexer.connector.cjson.ByteArraySerializer
 import org.reindexer.connector.cjson.Serializer
-import org.reindexer.connector.bindings.def.IndexDef
 import org.reindexer.connector.bindings.cproto.Cproto
 import org.reindexer.connector.exceptions.NsExistsException
 import org.reindexer.connector.exceptions.NsNotFoundException
 import org.reindexer.connector.exceptions.ReindexerException
 import org.reindexer.connector.exceptions.UnimplementedException
 import org.reindexer.connector.options.NamespaceOptions
+import org.reindexer.connector.query.Query
+import org.reindexer.connector.query.iterator.Iterator
 import org.reindexer.utils.Reflect
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
 
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.jvm.internal.Reflection
 
 /**
  * Reindex API
@@ -237,7 +238,102 @@ class Reindexer {
          */
     }
 
+    fun query(namespace: String): Query {
+        return Query.newQuery(this, namespace)
+    }
+
+    /*private */fun execQuery(q: Query): Iterator? {
+        /*result, err := db.prepareQuery(q, false)
+        if err != nil {
+            return errIterator(err)
+        }
+        iter := newIterator(q, result, q.nsArray, q.joinToFields, q.joinHandlers, q.context)
+        return iter*/
+        return null
+    }
+
+    private fun prepareQuery(q: Query, asJson: Boolean): Res {
+/*
+        if ns, err := db.getNS(q.Namespace); err == nil {
+            q.nsArray = append(q.nsArray, nsArrayEntry{ns, ns.cjsonState.Copy()})
+        } else {
+            return nil, err
+        }
+
+        ser := q.ser
+        for _, sq := range q.mergedQueries {
+            if ns, err := db.getNS(sq.Namespace); err == nil {
+            q.nsArray = append(q.nsArray, nsArrayEntry{ns, ns.cjsonState.Copy()})
+        } else {
+            return nil, err
+        }
+        }
+
+        for _, sq := range q.joinQueries {
+            if ns, err := db.getNS(sq.Namespace); err == nil {
+            q.nsArray = append(q.nsArray, nsArrayEntry{ns, ns.cjsonState.Copy()})
+        } else {
+            return nil, err
+        }
+        }
+
+        for _, mq := range q.mergedQueries {
+            for _, sq := range mq.joinQueries {
+            if ns, err := db.getNS(sq.Namespace); err == nil {
+            q.nsArray = append(q.nsArray, nsArrayEntry{ns, ns.cjsonState.Copy()})
+        } else {
+            return nil, err
+        }
+        }
+        }
+
+        ser.PutVarCUInt(queryEnd)
+        for _, sq := range q.joinQueries {
+            ser.PutVarCUInt(sq.joinType)
+            ser.Append(sq.ser)
+            ser.PutVarCUInt(queryEnd)
+        }
+
+        for _, mq := range q.mergedQueries {
+            ser.PutVarCUInt(merge)
+            ser.Append(mq.ser)
+            ser.PutVarCUInt(queryEnd)
+            for _, sq := range mq.joinQueries {
+            ser.PutVarCUInt(sq.joinType)
+            ser.Append(sq.ser)
+            ser.PutVarCUInt(queryEnd)
+        }
+        }
+
+        for _, ns := range q.nsArray {
+            q.ptVersions = append(q.ptVersions, ns.localCjsonState.Version^ns.localCjsonState.StateToken)
+        }
+        fetchCount := q.fetchCount
+        if asJson {
+            // json iterator not support fetch queries
+            fetchCount = -1
+        }
+
+        if err == nil && result.GetBuf() == nil {
+            panic(fmt.Errorf("result.Buffer is nil"))
+        }*/
+        return binding.selectQuery(q.ser.bytes(), asJson, q.ptVersions, q.fetchCount)
+    }
+
     companion object {
+
+/*
+        val ANY = 0
+        val EQ = 1
+        val LT = 2
+        val LE = 3
+        val GT = 4
+        val GE = 5
+        val RANGE = 6
+        val SET = 7
+        val ALLSET = 8
+        val EMPTY = 9
+*/
 
         @JvmStatic
         fun newReindexer(url: String): Reindexer {
